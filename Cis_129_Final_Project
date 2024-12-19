@@ -1,0 +1,64 @@
+FUNCTION load_courses_from_csv(filename)
+    DEFINE courses AS DICTIONARY
+    OPEN filename FOR READING AS file
+        CREATE a CSV reader for the file
+        FOR EACH row IN reader DO
+            courses[row['course_code']] = row['course_name']
+        ENDFOR
+    CLOSE file
+    RETURN courses
+END FUNCTION
+
+FUNCTION load_transfer_map_from_csv(filename)
+    DEFINE transfer_map AS DICTIONARY
+    OPEN filename FOR READING AS file
+        CREATE a CSV reader for the file
+        FOR EACH row IN reader DO
+            transfer_map[row['university_a_course']] = row['university_b_course']
+        ENDFOR
+    CLOSE file
+    RETURN transfer_map
+END FUNCTION
+
+FUNCTION transfer_courses(courses, transfer_map)
+    DEFINE transferred_courses AS DICTIONARY
+    FOR EACH course IN courses DO
+        IF course EXISTS IN transfer_map THEN
+            transferred_courses[course] = transfer_map[course]
+        ELSE
+            transferred_courses[course] = "No equivalent course found"
+        ENDIF
+    ENDFOR
+    RETURN transferred_courses
+END FUNCTION
+
+FUNCTION main()
+    // load courses and transfer map from CSV files
+    university_a_courses = load_courses_from_csv('university_a_courses.csv')
+    university_b_courses = load_courses_from_csv('university_b_courses.csv')
+    transfer_map = load_transfer_map_from_csv('transfer_map.csv')
+
+    PRINT "Welcome to the University Credit Transfer Calculator!"
+    PRINT "Please enter the courses you have taken from University A (comma-separated):"
+    
+    user_input = GET USER INPUT
+    user_courses = SPLIT user_input BY "," AND TRIM WHITESPACE
+
+    // validate entered courses
+    FOR EACH course IN user_courses DO
+        IF course NOT IN university_a_courses THEN
+            PRINT "Warning: " + course + " is not a valid course at University A."
+        ENDIF
+    ENDFOR
+
+    // transfer the courses based on the transfer map
+    transferred_courses = transfer_courses(user_courses, transfer_map)
+
+    PRINT "Transfer Results:"
+    FOR EACH course, transferred IN transferred_courses DO
+        PRINT course + " -> " + transferred
+    ENDFOR
+END FUNCTION
+
+// start the program
+CALL main()
